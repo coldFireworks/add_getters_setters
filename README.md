@@ -8,6 +8,8 @@ Done by simply just adding some attributes to the struct and fields, see example
     struct HorseRider {
 	    //stuff here
 	}
+    
+    #[derive(AddGetter, AddGetterMut, AddSetter)]
     struct RaceHorse {
 	    #[get]
 	    name: String,
