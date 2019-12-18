@@ -81,7 +81,7 @@ impl Gs {
 }
 
 #[proc_macro_derive(AddGetter, attributes(get))]
-pub fn derive_add_getter(input: TokenStream) -> TokenStream {
+pub fn add_getter(input: TokenStream) -> TokenStream {
     let gs_builder = Gs {
         ty: GsType::Getter,
         mutable: false
@@ -90,7 +90,7 @@ pub fn derive_add_getter(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_derive(AddGetterMut, attributes(get_mut))]
-pub fn derive_add_mut_getter(input: TokenStream) -> TokenStream {
+pub fn add_getter_mut(input: TokenStream) -> TokenStream {
     let gs_builder = Gs {
         ty: GsType::Getter,
         mutable: true
@@ -99,7 +99,7 @@ pub fn derive_add_mut_getter(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_derive(AddSetter, attributes(set))]
-pub fn derive_add_setter(input: TokenStream) -> TokenStream {
+pub fn add_setter(input: TokenStream) -> TokenStream {
     let gs_builder = Gs {
         ty: GsType::Setter,
         mutable: false
