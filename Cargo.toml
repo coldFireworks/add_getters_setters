@@ -1,6 +1,6 @@
 [package]
 name = "add_getters_setters"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Jordan Newman <jordankylenewman@gmail.com>"]
 edition = "2018"
 
@@ -11,8 +11,9 @@ Done by simply just adding some attributes to the struct and fields
 
 keywords = ["getter", "setter", "macro", "tool"]
 categories = ["development-tools::procedural-macro-helpers"]
-
+repository = "https://github.com/coldFireworks/add_getters_setters"
 license = "MIT"
+readme = "README.md"
 
 [lib]
 proc-macro = true
