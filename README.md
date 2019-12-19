@@ -1,3 +1,5 @@
+[![crates.io](https://img.shields.io/crates/v/add_getters_setters.svg)](https://crates.io/crates/add_getters_setters)
+
 # add_getters_setters
 
 Makes it much easier to add getters and setters for fields of structures.
@@ -8,7 +10,7 @@ Done by simply just adding some attributes to the struct and fields, see example
     struct HorseRider {
 	    //stuff here
 	}
-    
+
     #[derive(AddGetter, AddGetterMut, AddSetter)]
     struct RaceHorse {
 	    #[get]
