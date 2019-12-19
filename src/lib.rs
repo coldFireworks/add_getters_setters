@@ -28,10 +28,31 @@ impl Gs {
         if let syn::Data::Struct(DataStruct { ref fields, .. }) = ast.data {
             let generated = fields
                 .iter()
-                .map(|f| {
-                    match self.ty {
-                        GsType::Getter => self.gen_getter(f),
-                        GsType::Setter => self.gen_setter(f),
+                .filter_map(|f| {
+                    let token = match self.ty {
+                        GsType::Getter if self.mutable => "get_mut",
+                        GsType::Getter => "get",
+                        GsType::Setter => "set",
+                    };
+                    match f.attrs.iter().find_map(|v| {
+                        match v.parse_meta() {
+                            Ok(md) => {
+                                if md.path().is_ident(token) {
+                                    Some(md)
+                                } else {
+                                    None
+                                }
+                            },
+                            _ => None
+                        }
+                    }) {
+                        Some(_) => {
+                            match self.ty {
+                                GsType::Getter => Some(self.gen_getter(f)),
+                                GsType::Setter => Some(self.gen_setter(f)),
+                            }
+                        },
+                        None => None,
                     }
                 })
                 .collect::<Vec<_>>();
