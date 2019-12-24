@@ -50,6 +50,7 @@ With this code, these methods would be generared for you
 	}
 	    
 **Since version 1.0.0...**
+
 ... you may set attributes on the struct itself, which will implement them onto all of the fields, so...
 
     #[derive(AddGetter)]
