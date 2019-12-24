@@ -49,3 +49,26 @@ With this code, these methods would be generared for you
 	    }
 	}
 	    
+**Since version 1.0.0...**
+... you may set attributes on the struct itself, which will implement them onto all of the fields, so...
+
+    #[derive(AddGetter)]
+    #[get]
+    struct Dragon {
+	    name: String,
+	    age: u64,
+	    weight: u32
+	}
+is equivalent to...
+
+    #[derive(AddGetter)]
+    struct Dragon {
+	    #[get]
+	    name: String,
+	    
+	    #[get]
+	    age: u64,
+		
+	    #[get]
+	    weight: u32
+	}

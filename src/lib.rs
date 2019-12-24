@@ -7,7 +7,7 @@ extern crate quote;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use proc_macro2::{Ident, Span};
-use syn::{DataStruct, DeriveInput, Field};
+use syn::{DataStruct, DeriveInput, Field, Attribute};
 
 enum GsType {
     Getter,
@@ -16,7 +16,8 @@ enum GsType {
 
 struct Gs {
     ty: GsType,
-    mutable: bool
+    mutable: bool,
+    apply_to_all: bool
 }
 
 impl Gs {
@@ -34,25 +35,13 @@ impl Gs {
                         GsType::Getter => "get",
                         GsType::Setter => "set",
                     };
-                    match f.attrs.iter().find_map(|v| {
-                        match v.parse_meta() {
-                            Ok(md) => {
-                                if md.path().is_ident(token) {
-                                    Some(md)
-                                } else {
-                                    None
-                                }
-                            },
-                            _ => None
+                    if has_tag(f.attrs.iter(), token) || self.apply_to_all {
+                        match self.ty {
+                            GsType::Getter => Some(self.gen_getter(f)),
+                            GsType::Setter => Some(self.gen_setter(f)),
                         }
-                    }) {
-                        Some(_) => {
-                            match self.ty {
-                                GsType::Getter => Some(self.gen_getter(f)),
-                                GsType::Setter => Some(self.gen_setter(f)),
-                            }
-                        },
-                        None => None,
+                    }else{
+                        None
                     }
                 })
                 .collect::<Vec<_>>();
@@ -103,27 +92,47 @@ impl Gs {
 
 #[proc_macro_derive(AddGetter, attributes(get))]
 pub fn add_getter(input: TokenStream) -> TokenStream {
+    let ast: DeriveInput = syn::parse(input).unwrap();
     let gs_builder = Gs {
         ty: GsType::Getter,
-        mutable: false
+        mutable: false,
+        apply_to_all: has_tag(ast.attrs.iter(), "get")
     };
-    gs_builder.gen(&syn::parse(input).unwrap()).into()
+    gs_builder.gen(&ast).into()
 }
 
 #[proc_macro_derive(AddGetterMut, attributes(get_mut))]
 pub fn add_getter_mut(input: TokenStream) -> TokenStream {
+    let ast: DeriveInput = syn::parse(input).unwrap();
     let gs_builder = Gs {
         ty: GsType::Getter,
-        mutable: true
+        mutable: true,
+        apply_to_all: has_tag(ast.attrs.iter(), "get_mut")
     };
-    gs_builder.gen(&syn::parse(input).unwrap()).into()
+    gs_builder.gen(&ast).into()
 }
 
 #[proc_macro_derive(AddSetter, attributes(set))]
 pub fn add_setter(input: TokenStream) -> TokenStream {
+    let ast: DeriveInput = syn::parse(input).unwrap();
     let gs_builder = Gs {
         ty: GsType::Setter,
-        mutable: false
+        mutable: false,
+        apply_to_all: has_tag(ast.attrs.iter(), "set")
     };
-    gs_builder.gen(&syn::parse(input).unwrap()).into()
+    gs_builder.gen(&ast).into()
+}
+
+/// Pass in an Iterator and a tag to search for in the meta data, and it will return weather the tag was found or not
+fn has_tag<'a, T: Iterator<Item = &'a Attribute>>(mut attribs: T, tag_name: &str) -> bool {
+    attribs
+    .find_map(|v| {
+        let meta = v.parse_meta().expect("failed to parse attr meta data");
+        if meta.path().is_ident(tag_name) {
+            Some(meta)
+        } else {
+            None
+        }
+    })
+    .is_some()
 }
