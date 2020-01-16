@@ -71,7 +71,9 @@ fn test_add_getter_mut_should_panic() {
 
 
 
-// *******************************
+// *********************************
+// * test tags on the whole struct *
+// *********************************
 
 #[derive(Debug, PartialEq)]
 enum DragonClassifications {
@@ -111,12 +113,66 @@ fn get_dragon_age_mut() {
 }
 
 #[test]
-fn set_gragon_type() {
+fn set_dragon_type() {
     let mut falkor = Dragon {
         name: "Falkor".to_owned(),
-        age: 0xffffffffffffffff, // (he's v old)
+        age: 0xffffffffffffffff,
         ty: DragonClassifications::BlackDragon
     };
     falkor.set_ty(DragonClassifications::LuckDragon);
     assert_eq!(*falkor.get_ty(), DragonClassifications::LuckDragon);
 }
+
+// ***************************
+// * if statement benchmarks *
+// ***************************
+
+// uncomment them and paste them into your own file to try for yourself
+// my results:
+//  bench_try_func_call_first ....... 7 ns/iter (+/- 0)
+//  bench_try_func_call_last ........ 0 ns/iter (+/- 0)
+
+// #[cfg(test)]
+// mod benches {
+//     use test::Bencher;
+
+//     fn all_in_range<'a, T: Iterator<Item = &'a u64>>(mut attribs: T, low: u64, high: u64) -> bool {
+//         attribs.find_map(|v| {
+//             if *v <= high && *v >= low {
+//                 Some(v)
+//             } else {
+//                 None
+//             }
+//         }).is_some()
+//     }
+
+//     #[bench]
+//     fn bench_try_func_call_first(b: &mut Bencher) { // 7 ns/iter
+//         let can_pass = true;
+//         let collection: Vec<u64> = vec![34, 5431, 12344, 734125, 65426, 276, 7, 6, 7487, 987, 569, 222, 333, 444, 555, 666, 777, 888, 984302, 12, 1, 2, 3, 4, 18];
+//         b.iter(|| {
+//             test::black_box(
+//                 if all_in_range(collection.iter(), 800, 900) || can_pass {
+//                     18u8 // just return some random stuff so the complier doesn't skip code, see https://doc.rust-lang.org/1.16.0/book/benchmark-tests.html#gotcha-optimizations
+//                 } else {
+//                     5u8 // just return some random stuff so the complier doesn't skip code, see https://doc.rust-lang.org/1.16.0/book/benchmark-tests.html#gotcha-optimizations
+//                 }
+//             )
+//         });
+//     }
+
+//     #[bench]
+//     fn bench_try_func_call_last(b: &mut Bencher) { // 0 ns/iter
+//         let can_pass = true;
+//         let collection: Vec<u64> = vec![34, 5431, 12344, 734125, 65426, 276, 7, 6, 7487, 987, 569, 222, 333, 444, 555, 666, 777, 888, 984302, 12, 1, 2, 3, 4, 18];
+//         b.iter(|| {
+//             test::black_box(
+//                 if can_pass || all_in_range(collection.iter(), 800, 900) {
+//                     18u8 // just return some random stuff so the complier doesn't skip code, see https://doc.rust-lang.org/1.16.0/book/benchmark-tests.html#gotcha-optimizations
+//                 } else {
+//                     5u8 // just return some random stuff so the complier doesn't skip code, see https://doc.rust-lang.org/1.16.0/book/benchmark-tests.html#gotcha-optimizations
+//                 }
+//             )
+//         });
+//     }
+// }

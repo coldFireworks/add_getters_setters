@@ -1,3 +1,4 @@
+#![feature(test)]
 extern crate proc_macro;
 extern crate proc_macro2;
 extern crate syn;
@@ -35,7 +36,10 @@ impl Gs {
                         GsType::Getter => "get",
                         GsType::Setter => "set",
                     };
-                    if has_tag(f.attrs.iter(), token) || self.apply_to_all {
+                    // rust does actually try the conditions in order - the complier doesn't put the least expensive first,
+                    // so check the boolean variable before calling the expensive function, for optimisation.
+                    // see bottom of test file for benchmarks on this
+                    if self.apply_to_all || has_tag(f.attrs.iter(), token) {
                         match self.ty {
                             GsType::Getter => Some(self.gen_getter(f)),
                             GsType::Setter => Some(self.gen_setter(f)),
@@ -52,7 +56,7 @@ impl Gs {
                 }
             }
         } else {
-            panic!("#[derive(Getters)] is only defined for structs, not for enums!");
+            panic!("This derive macro may not be used on enums");
         }
     }
 
