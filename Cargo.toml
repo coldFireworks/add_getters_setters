@@ -1,6 +1,6 @@
 [package]
 name = "add_getters_setters"
-version = "1.0.1"
+version = "1.1.0"
 authors = ["Jordan Newman <jordankylenewman@gmail.com>"]
 edition = "2018"
 

@@ -10,18 +10,34 @@ use proc_macro2::TokenStream as TokenStream2;
 use proc_macro2::{Ident, Span};
 use syn::{DataStruct, DeriveInput, Field, Attribute};
 
+enum GetterType {
+    Ref,
+    RefMut,
+    Val
+}
+
 enum GsType {
-    Getter,
+    Getter(GetterType),
     Setter,
 }
 
-struct Gs {
+impl GsType {
+    fn get_getter_type(&self) -> &GetterType {
+        match self {
+            Self::Getter(ref gt) => gt,
+            Self::Setter => panic!("error occurred while creating getters and setters"),
+        }
+    }
+}
+
+struct Gs<'a> {
     ty: GsType,
-    mutable: bool,
+    prefix: &'a str,
+    suffix: &'a str,
     apply_to_all: bool
 }
 
-impl Gs {
+impl<'a> Gs<'a> {
     pub fn gen(self, ast: &DeriveInput) -> TokenStream2 {
         let name = &ast.ident;
         let generics = &ast.generics;
@@ -32,16 +48,21 @@ impl Gs {
                 .iter()
                 .filter_map(|f| {
                     let token = match self.ty {
-                        GsType::Getter if self.mutable => "get_mut",
-                        GsType::Getter => "get",
-                        GsType::Setter => "set",
+                        GsType::Getter(ref gt) => {
+                            match gt {
+                                GetterType::Ref => "get",
+                                GetterType::RefMut => "get_mut",
+                                GetterType::Val => "get_val",
+                            }
+                        },
+                        GsType::Setter => "set"
                     };
                     // rust does actually try the conditions in order - the complier doesn't put the least expensive first,
                     // so check the boolean variable before calling the expensive function, for optimisation.
                     // see bottom of test file for benchmarks on this
                     if self.apply_to_all || has_tag(f.attrs.iter(), token) {
                         match self.ty {
-                            GsType::Getter => Some(self.gen_getter(f)),
+                            GsType::Getter(_) => Some(self.gen_getter(f)),
                             GsType::Setter => Some(self.gen_setter(f)),
                         }
                     }else{
@@ -75,21 +96,29 @@ impl Gs {
     fn gen_getter(&self, field: &Field) -> TokenStream2 {
         let field_name = field.clone().ident.unwrap();
         let ty = field.ty.clone();
-        let fn_name = Ident::new(&format!("get_{}{}", field_name, if self.mutable{ "_mut" } else { "" }), Span::call_site());
-        if self.mutable {
-            quote! {
-                #[inline(always)]
-                pub fn #fn_name(&mut self) -> &mut #ty {
-                    &mut self.#field_name
+        let fn_name = Ident::new(&format!("{}{}{}", self.prefix, field_name, self.suffix), Span::call_site());
+        match self.ty.get_getter_type() {
+            GetterType::Ref =>
+                quote! {
+                    #[inline(always)]
+                    pub fn #fn_name(&self) -> &#ty {
+                        &self.#field_name
+                    }
+                },
+            GetterType::RefMut =>
+                quote! {
+                    #[inline(always)]
+                    pub fn #fn_name(&mut self) -> &mut #ty {
+                        &mut self.#field_name
+                    }
+                },
+            GetterType::Val =>
+                quote! {
+                    #[inline(always)]
+                    pub fn #fn_name(&self) -> #ty {
+                        self.#field_name // this will cause an implicit copy so the type must implement the Copy (and Clone) traits
+                    }
                 }
-            }
-        } else {
-            quote! {
-                #[inline(always)]
-                pub fn #fn_name(&self) -> &#ty {
-                    &self.#field_name
-                }
-            }
         }
     }
 }
@@ -98,8 +127,9 @@ impl Gs {
 pub fn add_getter(input: TokenStream) -> TokenStream {
     let ast: DeriveInput = syn::parse(input).unwrap();
     let gs_builder = Gs {
-        ty: GsType::Getter,
-        mutable: false,
+        ty: GsType::Getter(GetterType::Ref),
+        prefix: "get_",
+        suffix: "",
         apply_to_all: has_tag(ast.attrs.iter(), "get")
     };
     gs_builder.gen(&ast).into()
@@ -109,9 +139,22 @@ pub fn add_getter(input: TokenStream) -> TokenStream {
 pub fn add_getter_mut(input: TokenStream) -> TokenStream {
     let ast: DeriveInput = syn::parse(input).unwrap();
     let gs_builder = Gs {
-        ty: GsType::Getter,
-        mutable: true,
+        ty: GsType::Getter(GetterType::RefMut),
+        prefix: "get_",
+        suffix: "_mut",
         apply_to_all: has_tag(ast.attrs.iter(), "get_mut")
+    };
+    gs_builder.gen(&ast).into()
+}
+
+#[proc_macro_derive(AddGetterVal, attributes(get_val))]
+pub fn add_getter_val(input: TokenStream) -> TokenStream {
+    let ast: DeriveInput = syn::parse(input).unwrap();
+    let gs_builder = Gs {
+        ty: GsType::Getter(GetterType::Val),
+        prefix: "",
+        suffix: "",
+        apply_to_all: has_tag(ast.attrs.iter(), "get_val")
     };
     gs_builder.gen(&ast).into()
 }
@@ -121,7 +164,8 @@ pub fn add_setter(input: TokenStream) -> TokenStream {
     let ast: DeriveInput = syn::parse(input).unwrap();
     let gs_builder = Gs {
         ty: GsType::Setter,
-        mutable: false,
+        prefix: "set_",
+        suffix: "",
         apply_to_all: has_tag(ast.attrs.iter(), "set")
     };
     gs_builder.gen(&ast).into()

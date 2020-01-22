@@ -1,11 +1,12 @@
 #[macro_use]
 extern crate add_getters_setters;
 
-#[derive(AddGetter, AddGetterMut, AddSetter)]
+#[derive(AddGetter, AddGetterVal, AddGetterMut, AddSetter)]
 struct Ts {
     jaf: u8,
     
     #[set]
+    #[get_val]
     field_1: u8,
 
     #[get]
@@ -18,6 +19,11 @@ impl Ts {
     #[allow(dead_code)]
     pub fn get_jaf(&self) -> & u8 {
         &self.field_1
+    }
+
+    #[allow(dead_code)]
+    pub fn jaf(&self) -> u8 {
+        self.jaf
     }
 
     #[allow(dead_code)]
@@ -67,6 +73,21 @@ fn test_add_getter_mut_should_panic() {
     let b = a.get_field_2_mut();
     *b = String::from("world");
     assert_eq!(a.get_field_2(), &String::from("hello"));
+}
+
+#[test]
+fn test_add_getter_by_val() {
+    let a = Ts {jaf: 4, field_1: 5, field_2: String::from("hello")};
+    let b = a.field_1();
+    assert_eq!(b, 5);
+}
+
+#[test]
+#[should_panic]
+fn test_add_getter_by_val_should_panic() {
+    let a = Ts {jaf: 4, field_1: 0, field_2: String::from("hello")};
+    let b = a.field_1();
+    assert_eq!(b, 5);
 }
 
 
