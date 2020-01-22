@@ -3,6 +3,7 @@
 # add_getters_setters
 
 Makes it much easier to add getters and setters for fields of structures.
+
 Done by simply just adding the appropriate meta tag(s) onto the struct or fields of the struct
 which will generate the corresponding methods for you.
 
@@ -11,6 +12,7 @@ which will generate the corresponding methods for you.
 - Add this crate into your Cargo.toml file
 
 - Add the following line to the top of `main.rs`
+
 	`#[macro_use] extern crate add_getters_setters;`
 
 - Add the `#[derive()]` tag on your struct, and derive the necessary functions:
