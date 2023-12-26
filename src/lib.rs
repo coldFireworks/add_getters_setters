@@ -90,8 +90,9 @@ impl<'a> Gs<'a> {
         let ty = field.ty.clone();
         quote! {
             #[inline(always)]
-            pub fn #fn_name(&mut self, v: #ty) {
+            pub fn #fn_name(&mut self, v: #ty) -> &Self {
                 self.#field_name = v;
+                self
             }
         }
     }
