@@ -17,6 +17,7 @@ enum GetterType {
 
 enum GsType {
     Getter(GetterType),
+    With,
     Setter,
 }
 
@@ -25,6 +26,7 @@ impl GsType {
         match self {
             Self::Getter(ref gt) => gt,
             Self::Setter => panic!("error occurred while creating getters and setters"),
+            Self::With   => panic!("error occurred while creating getters and setters"),
         }
     }
 }
@@ -54,7 +56,8 @@ impl<'a> Gs<'a> {
                                 GetterType::Val => "get_val",
                             }
                         },
-                        GsType::Setter => "set"
+                        GsType::Setter => "set",
+                        GsType::With   => "with",
                     };
                     // rust does actually try the conditions in order - the complier doesn't put the least expensive first,
                     // so check the boolean variable before calling the expensive function, for optimisation.
@@ -63,6 +66,7 @@ impl<'a> Gs<'a> {
                         match self.ty {
                             GsType::Getter(_) => Some(self.gen_getter(f)),
                             GsType::Setter => Some(self.gen_setter(f)),
+                            GsType::With => Some(self.gen_with(f)),
                         }
                     }else{
                         None
@@ -86,8 +90,22 @@ impl<'a> Gs<'a> {
         let ty = field.ty.clone();
         quote! {
             #[inline(always)]
-            pub fn #fn_name(&mut self, v: #ty) {
+            pub fn #fn_name(&mut self, v: #ty) -> &Self {
                 self.#field_name = v;
+                self
+            }
+        }
+    }
+
+    fn gen_with(&self, field: &Field) -> TokenStream2 {
+        let field_name = field.clone().ident.unwrap();
+        let fn_name = Ident::new(&format!("with_{}", field_name), Span::call_site());
+        let ty = field.ty.clone();
+        quote! {
+            #[inline(always)]
+            pub fn #fn_name(mut self, v: #ty) -> Self {
+                self.#field_name = v;
+                self
             }
         }
     }
@@ -166,6 +184,17 @@ pub fn add_setter(input: TokenStream) -> TokenStream {
         prefix: "set_",
         suffix: "",
         apply_to_all: has_tag(ast.attrs.iter(), "set")
+    };
+    gs_builder.gen(&ast).into()
+}
+#[proc_macro_derive(AddWith, attributes(with))]
+pub fn add_with(input: TokenStream) -> TokenStream {
+    let ast: DeriveInput = syn::parse(input).unwrap();
+    let gs_builder = Gs {
+        ty: GsType::With,
+        prefix: "with_",
+        suffix: "",
+        apply_to_all: has_tag(ast.attrs.iter(), "with")
     };
     gs_builder.gen(&ast).into()
 }

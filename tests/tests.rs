@@ -1,12 +1,13 @@
 #[macro_use]
 extern crate add_getters_setters;
 
-#[derive(AddGetter, AddGetterVal, AddGetterMut, AddSetter)]
+#[derive(AddWith, AddGetter, AddGetterVal, AddGetterMut, AddSetter)]
 struct Ts {
     jaf: u8,
     
     #[set]
     #[get_val]
+    #[with]
     field_1: u8,
 
     #[get]
@@ -42,6 +43,13 @@ fn test_add_setter() {
     let mut a = Ts {jaf: 4, field_1: 0, field_2: String::from("hello")};
     a.set_field_1(14);
     assert_eq!(a.field_1, 14);
+}
+
+#[test]
+fn test_add_with() {
+    let a = Ts {jaf: 4, field_1: 0, field_2: String::from("hello")}
+            .with_field_1(42);
+    assert_eq!(a.field_1, 42);
 }
 
 #[test]
@@ -102,10 +110,11 @@ enum DragonClassifications {
     LuckDragon,
 }
 
-#[derive(AddGetter, AddGetterMut, AddSetter)]
+#[derive(AddWith, AddGetter, AddGetterMut, AddSetter)]
 #[get]
 #[get_mut]
 #[set]
+#[with]
 struct Dragon {
     name: String,
     age: u64, // 18446744073709551615 year old dragons cos why not
@@ -141,6 +150,15 @@ fn set_dragon_type() {
         ty: DragonClassifications::BlackDragon
     };
     falkor.set_ty(DragonClassifications::LuckDragon);
+    assert_eq!(*falkor.get_ty(), DragonClassifications::LuckDragon);
+}
+#[test]
+fn with_dragon_type() {
+    let falkor = Dragon {
+        name: "Falkor".to_owned(),
+        age: 0xffffffffffffffff,
+        ty: DragonClassifications::BlackDragon }
+            .with_ty(DragonClassifications::LuckDragon);
     assert_eq!(*falkor.get_ty(), DragonClassifications::LuckDragon);
 }
 
